@@ -19,3 +19,11 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+-keepattributes Signature
+-keep class **$Properties
+
+-dontwarn com.evernote.android.job.**
+
+-dontwarn okio.**
+-dontwarn javax.annotation.**
