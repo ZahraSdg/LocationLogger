@@ -1,7 +1,6 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
-apply plugin: 'kotlin-kapt'
 
 android {
     compileSdkVersion 28
@@ -33,9 +32,6 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
         }
     }
-    dataBinding {
-        enabled = true
-    }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
@@ -44,10 +40,6 @@ android {
 
 repositories {
     mavenCentral()
-}
-
-kapt {
-    generateStubs = true
 }
 
 
@@ -63,4 +55,7 @@ dependencies {
     //Lifecycle Architecture Component
     implementation "android.arch.lifecycle:extensions:$lifecycle_version"
     annotationProcessor "android.arch.lifecycle:compiler:$lifecycle_version"
+    //View
+    implementation 'com.google.android.gms:play-services-maps:16.1.0'
+    implementation 'com.android.support:appcompat-v7:28.0.0'
 }
