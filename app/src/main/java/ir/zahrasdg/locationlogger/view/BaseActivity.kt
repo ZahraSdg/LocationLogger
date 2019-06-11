@@ -1,9 +1,9 @@
-package ir.zahrasdg.locationlogger
+package ir.zahrasdg.locationlogger.view
 
-import android.arch.lifecycle.ViewModel
 import android.os.Bundle
-import android.support.annotation.LayoutRes
-import android.support.v7.app.AppCompatActivity
+import androidx.annotation.LayoutRes
+import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.ViewModel
 
 
 abstract class BaseActivity<T : ViewModel> : AppCompatActivity() {

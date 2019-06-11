@@ -1,11 +1,11 @@
-package ir.zahrasdg.locationlogger
+package ir.zahrasdg.locationlogger.util
 
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
 import android.location.Location
-import android.support.v4.content.ContextCompat
 import android.util.Log
+import androidx.core.content.ContextCompat
 import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.location.*
 import com.google.android.gms.tasks.Task
@@ -134,6 +134,6 @@ class LocationHelper(private val context: Context) {
     companion object {
         private val TAG = LocationHelper::class.java.name
         private const val TIME_INTERVAL = 5000L
-        private const val DISPLACEMENT = 5F
+        private const val DISPLACEMENT = 2F
     }
 }

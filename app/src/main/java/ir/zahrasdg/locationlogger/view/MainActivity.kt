@@ -1,19 +1,27 @@
-package ir.zahrasdg.locationlogger
+package ir.zahrasdg.locationlogger.view
 
 import android.Manifest
-import android.arch.lifecycle.ViewModelProviders
 import android.content.Intent
 import android.location.Location
 import android.os.Bundle
 import android.provider.Settings
-import android.support.v4.app.ActivityCompat
+import android.widget.Toast
+import androidx.core.app.ActivityCompat
+import androidx.lifecycle.ViewModelProviders
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
+import ir.zahrasdg.locationlogger.R
+import ir.zahrasdg.locationlogger.model.UserStatus
+import ir.zahrasdg.locationlogger.util.AppConstants
+import ir.zahrasdg.locationlogger.util.LocationHelper
+import ir.zahrasdg.locationlogger.viewmodel.MainViewModel
 import kotlinx.android.synthetic.main.activity_main.*
+import java.util.*
 
 
-class MainActivity : BaseActivity<MainViewModel>(), OnMapReadyCallback, LocationHelper.Listener {
+class MainActivity : BaseActivity<MainViewModel>(), OnMapReadyCallback,
+    LocationHelper.Listener {
 
     private lateinit var mMap: GoogleMap
 
@@ -62,6 +70,7 @@ class MainActivity : BaseActivity<MainViewModel>(), OnMapReadyCallback, Location
 
     override fun onLocationUpdated(location: Location) {
 
+        viewModel.logStatus(UserStatus(0, location.latitude, location.longitude, Calendar.getInstance().timeInMillis))
         viewModel.location = location
     }
 

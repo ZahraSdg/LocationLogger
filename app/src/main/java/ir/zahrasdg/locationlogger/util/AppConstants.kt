@@ -1,4 +1,4 @@
-package ir.zahrasdg.locationlogger
+package ir.zahrasdg.locationlogger.util
 
 object AppConstants {
 
