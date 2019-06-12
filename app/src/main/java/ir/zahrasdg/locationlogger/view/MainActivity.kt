@@ -4,7 +4,6 @@ import android.Manifest
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Canvas
-import android.location.Location
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
@@ -22,14 +21,12 @@ import com.google.android.gms.maps.model.MarkerOptions
 import ir.zahrasdg.locationlogger.R
 import ir.zahrasdg.locationlogger.model.UserStatus
 import ir.zahrasdg.locationlogger.util.AppConstants
-import ir.zahrasdg.locationlogger.util.LocationHelper
 import ir.zahrasdg.locationlogger.viewmodel.MainViewModel
 import kotlinx.android.synthetic.main.activity_main.*
 import java.util.*
 
 
-class MainActivity : BaseActivity<MainViewModel>(), OnMapReadyCallback,
-    LocationHelper.Listener {
+class MainActivity : BaseActivity<MainViewModel>(), OnMapReadyCallback {
 
     private lateinit var mMap: GoogleMap
 
@@ -48,11 +45,17 @@ class MainActivity : BaseActivity<MainViewModel>(), OnMapReadyCallback,
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         (mapFragment as SupportMapFragment).getMapAsync(this)
 
-        val newStatusInsertedObserver = Observer<UserStatus> {
-            it?.let {
+        val newStatusInsertedObserver = Observer<UserStatus> { userStatus ->
+            userStatus?.let {
                 addMarker(it)
             }
         }
+
+        viewModel.location.observe(this, Observer { location ->
+            location?.let {
+                viewModel.logStatus(UserStatus(0, it.latitude, it.longitude, Calendar.getInstance().timeInMillis))
+            }
+        })
 
         viewModel.userStatuses.observe(this, androidx.lifecycle.Observer { statuses ->
 
@@ -61,18 +64,27 @@ class MainActivity : BaseActivity<MainViewModel>(), OnMapReadyCallback,
                     addMarkers(it)
                     viewModel.incrementPage()
                 } else { // end of paging saved data
-                    viewModel.newlyInsertedStatus.observe(this,newStatusInsertedObserver)
+                    viewModel.newlyInsertedStatus.observe(this, newStatusInsertedObserver)
                     viewModel.userStatuses.removeObservers(this)
                 }
             }
 
+        })
+
+        viewModel.locationSettingSatisfied.observe(this, Observer { satisfied ->
+            satisfied?.let {
+                if (!it) {
+                    showLocationSetting()
+                }
+            }
         })
     }
 
     override fun onResume() {
         super.onResume()
 
-        viewModel.startLocationUpdates(this)
+        viewModel.checkLocationSettings()
+        viewModel.startLocationUpdates()
     }
 
     override fun onPause() {
@@ -86,30 +98,17 @@ class MainActivity : BaseActivity<MainViewModel>(), OnMapReadyCallback,
 
         mMap = googleMap
 
-        viewModel.getLocationPermission()
+        if (viewModel.locationPermissionGranted) {
+            viewModel.getLastKnownLocation()
+        } else {
+            requestPermission()
+        }
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 
         viewModel.handlePermissionResult(requestCode, grantResults)
-        //update ui
-    }
-
-    override fun onLocationUpdated(location: Location) {
-
-        viewModel.logStatus(UserStatus(0, location.latitude, location.longitude, Calendar.getInstance().timeInMillis))
-        viewModel.location = location
-    }
-
-    override fun onLocationSettingChanged(successful: Boolean) {
-        if (!successful) {
-            showLocationSetting()
-        }
-    }
-
-    override fun onNeedLocationPermission() {
-        requestPermission()
     }
 
     private fun requestPermission() {
