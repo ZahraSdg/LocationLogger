@@ -3,7 +3,6 @@ package ir.zahrasdg.locationlogger.viewmodel
 import android.app.Application
 import android.content.pm.PackageManager
 import android.location.Location
-import android.location.LocationManager
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -26,11 +25,17 @@ import java.util.*
 
 class MainViewModel(application: Application) : BaseAndroidViewModel(application) {
 
+    companion object {
+
+        private const val MAX_DISPLACEMENT_IN_FIVE_SECONDS = 100F
+        private const val MIN_DISPLACEMENT_IN_FIVE_SECONDS = 5F
+    }
 
     private val userStatusRepository by inject<UserStatusRepository>()
     private val locationRepository by inject<LocationRepository>()
     private var pageNumber = MutableLiveData<Int>()
     private var newlyInsertedId = MutableLiveData<Int>()
+    private var lastLocation: Location? = null
     val location = locationRepository.location
     var locationPermissionGranted = MutableLiveData<Boolean>()
     var locationSettingSatisfied = MutableLiveData<Boolean>()
@@ -55,16 +60,20 @@ class MainViewModel(application: Application) : BaseAndroidViewModel(application
     private fun loadNextPage(pageNum: Int) = userStatusRepository.loadStatusPage(pageNum)
 
     fun logStatus(userStatus: UserStatus) {
-        val newLocation = Location(LocationManager.GPS_PROVIDER)
-        newLocation.latitude = userStatus.latitude
-        newLocation.longitude = userStatus.longitude
 
         location.value?.let {
-            if (it.distanceTo(newLocation) < 5f)
-                return
-        }
 
-        insertStatus(userStatus)
+            // if its first assertion or distance with previous location is between 5-100
+            if (lastLocation == null || (it.distanceTo(lastLocation) > MIN_DISPLACEMENT_IN_FIVE_SECONDS && it.distanceTo(
+                    lastLocation
+                ) < MAX_DISPLACEMENT_IN_FIVE_SECONDS)
+            ) {
+
+                insertStatus(userStatus)
+            }
+
+            lastLocation = location.value
+        }
     }
 
     private fun insertStatus(userStatus: UserStatus) = viewModelScope.launch(Dispatchers.IO) {
