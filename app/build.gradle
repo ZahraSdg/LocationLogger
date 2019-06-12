@@ -18,7 +18,7 @@ android {
         releaseConfig {
             keyAlias 'key0'
             keyPassword 'locationlogger'
-            storeFile file('../keystore/locationLogger.jks')
+            storeFile file('../keystore/locationLoggerKey.jks')
             storePassword 'locationlogger'
         }
     }
