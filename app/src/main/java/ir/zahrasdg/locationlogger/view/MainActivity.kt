@@ -8,7 +8,6 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
 import androidx.vectordrawable.graphics.drawable.VectorDrawableCompat
@@ -16,7 +15,10 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
-import com.google.android.gms.maps.model.*
+import com.google.android.gms.maps.model.BitmapDescriptor
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
+import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.MarkerOptions
 import ir.zahrasdg.locationlogger.R
 import ir.zahrasdg.locationlogger.model.UserStatus
 import ir.zahrasdg.locationlogger.util.AppConstants
@@ -48,12 +50,6 @@ class MainActivity : BaseActivity<MainViewModel>(), OnMapReadyCallback {
     override fun setupObservers() {
         super.setupObservers()
 
-        val newStatusInsertedObserver = Observer<UserStatus> { userStatus ->
-            userStatus?.let {
-                addMarker(it)
-            }
-        }
-
         viewModel.location.observe(this, Observer { location ->
             location?.let {
 
@@ -67,13 +63,20 @@ class MainActivity : BaseActivity<MainViewModel>(), OnMapReadyCallback {
             statuses?.let {
                 if (it.isNotEmpty()) {
                     addMarkers(it)
+                    viewModel.onPageLoading = true
                     viewModel.incrementPage()
                 } else { // end of paging saved data
-                    viewModel.newlyInsertedStatus.observe(this, newStatusInsertedObserver)
+                    viewModel.onPageLoading = false
                     viewModel.userStatuses.removeObservers(this)
                 }
             }
 
+        })
+
+        viewModel.newlyInsertedStatus.observe(this, Observer<UserStatus> { userStatus ->
+            userStatus?.let {
+                addMarker(it)
+            }
         })
 
         viewModel.locationSettingSatisfied.observe(this, Observer { satisfied ->

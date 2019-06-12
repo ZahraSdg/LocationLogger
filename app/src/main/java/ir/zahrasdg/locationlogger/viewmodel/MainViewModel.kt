@@ -39,8 +39,7 @@ class MainViewModel(application: Application) : BaseAndroidViewModel(application
     val location = locationRepository.location
     var locationPermissionGranted = MutableLiveData<Boolean>()
     var locationSettingSatisfied = MutableLiveData<Boolean>()
-    var locationRequestStarted = false
-
+    var onPageLoading = true
     var userStatuses: LiveData<List<UserStatus>> = Transformations.switchMap(pageNumber, ::loadNextPage)
     var newlyInsertedStatus: LiveData<UserStatus> =
         Transformations.switchMap(newlyInsertedId, ::loadSingleStatus)
@@ -68,7 +67,6 @@ class MainViewModel(application: Application) : BaseAndroidViewModel(application
                     lastLocation
                 ) < MAX_DISPLACEMENT_IN_FIVE_SECONDS)
             ) {
-
                 insertStatus(userStatus)
             }
 
@@ -77,18 +75,18 @@ class MainViewModel(application: Application) : BaseAndroidViewModel(application
     }
 
     private fun insertStatus(userStatus: UserStatus) = viewModelScope.launch(Dispatchers.IO) {
-        newlyInsertedId.postValue(userStatusRepository.insert(userStatus).toInt())
+        val insertedId = userStatusRepository.insert(userStatus).toInt()
+        if (!onPageLoading) { // notify new status inserted after paging is done
+            newlyInsertedId.postValue(insertedId)
+        }
     }
 
     fun startLocationUpdates() {
         locationRepository.startLocationUpdates()
-        locationRequestStarted = true
     }
 
     fun stopLocationUpdates() {
         locationRepository.stopLocationUpdates()
-        locationRequestStarted = false
-
     }
 
     fun getLastKnownLocation() {
@@ -144,13 +142,12 @@ class MainViewModel(application: Application) : BaseAndroidViewModel(application
             val calendar = Calendar.getInstance()
             val tz = TimeZone.getDefault()
             calendar.timeInMillis = timestamp
-            calendar.add(Calendar.MILLISECOND, tz.getOffset(calendar.getTimeInMillis()))
+            calendar.add(Calendar.MILLISECOND, tz.getOffset(calendar.timeInMillis))
             val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
             val currentTimeZone = calendar.time as Date
             return sdf.format(currentTimeZone)
         } catch (e: Exception) {
         }
-
         return ""
     }
 }
