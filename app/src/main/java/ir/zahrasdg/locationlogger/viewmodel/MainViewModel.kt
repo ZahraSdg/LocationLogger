@@ -20,6 +20,9 @@ import ir.zahrasdg.locationlogger.util.AppConstants
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.koin.standalone.inject
+import java.text.SimpleDateFormat
+import java.util.*
+
 
 class MainViewModel(application: Application) : BaseAndroidViewModel(application) {
 
@@ -29,13 +32,13 @@ class MainViewModel(application: Application) : BaseAndroidViewModel(application
     private var pageNumber = MutableLiveData<Int>()
     private var newlyInsertedId = MutableLiveData<Int>()
     val location = locationRepository.location
-    var locationPermissionGranted = false
+    var locationPermissionGranted = MutableLiveData<Boolean>()
     var locationSettingSatisfied = MutableLiveData<Boolean>()
     var locationRequestStarted = false
 
     var userStatuses: LiveData<List<UserStatus>> = Transformations.switchMap(pageNumber, ::loadNextPage)
     var newlyInsertedStatus: LiveData<UserStatus> =
-        Transformations.switchMap(newlyInsertedId, ::exportNewStatusInserted)
+        Transformations.switchMap(newlyInsertedId, ::loadSingleStatus)
 
     init {
         pageNumber.value = 1
@@ -46,8 +49,8 @@ class MainViewModel(application: Application) : BaseAndroidViewModel(application
         pageNumber.postValue(pageNumber.value?.inc())
     }
 
-    private fun exportNewStatusInserted(newlyInsertedId: Int) =
-        userStatusRepository.loadNewlyInsertedStatus(newlyInsertedId)
+    private fun loadSingleStatus(id: Int) =
+        userStatusRepository.loadNewlyInsertedStatus(id)
 
     private fun loadNextPage(pageNum: Int) = userStatusRepository.loadStatusPage(pageNum)
 
@@ -85,7 +88,7 @@ class MainViewModel(application: Application) : BaseAndroidViewModel(application
 
     private fun checkLocationPermission() {
 
-        locationPermissionGranted = ContextCompat.checkSelfPermission(
+        locationPermissionGranted.value = ContextCompat.checkSelfPermission(
             getApplication<Application>().applicationContext,
             android.Manifest.permission.ACCESS_FINE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED
@@ -113,15 +116,32 @@ class MainViewModel(application: Application) : BaseAndroidViewModel(application
     }
 
     fun handlePermissionResult(requestCode: Int, grantResults: IntArray) {
-        locationPermissionGranted = false
+        locationPermissionGranted.value = false
         when (requestCode) {
             AppConstants.PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION -> {
                 // If request is cancelled, the result arrays are empty.
                 if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    locationPermissionGranted = true
+                    locationPermissionGranted.value = true
                     getLastKnownLocation()
+                } else {
+                    locationPermissionGranted.value = false
                 }
             }
         }
+    }
+
+    fun getDateCurrentTimeZone(timestamp: Long): String {
+        try {
+            val calendar = Calendar.getInstance()
+            val tz = TimeZone.getDefault()
+            calendar.timeInMillis = timestamp
+            calendar.add(Calendar.MILLISECOND, tz.getOffset(calendar.getTimeInMillis()))
+            val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
+            val currentTimeZone = calendar.time as Date
+            return sdf.format(currentTimeZone)
+        } catch (e: Exception) {
+        }
+
+        return ""
     }
 }

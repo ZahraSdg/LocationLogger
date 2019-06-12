@@ -13,7 +13,7 @@ class LocationRepository(private val fusedLocationClient: FusedLocationProviderC
 
         private val TAG = LocationRepository::class.java.name
         private const val TIME_INTERVAL = 5000L
-        private const val DISPLACEMENT = 2F
+        private const val DISPLACEMENT = 5F
     }
 
     private var locationRequest: LocationRequest? = null

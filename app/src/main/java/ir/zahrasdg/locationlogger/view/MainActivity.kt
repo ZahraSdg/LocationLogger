@@ -11,13 +11,12 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
+import androidx.vectordrawable.graphics.drawable.VectorDrawableCompat
+import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
-import com.google.android.gms.maps.model.BitmapDescriptor
-import com.google.android.gms.maps.model.BitmapDescriptorFactory
-import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.MarkerOptions
+import com.google.android.gms.maps.model.*
 import ir.zahrasdg.locationlogger.R
 import ir.zahrasdg.locationlogger.model.UserStatus
 import ir.zahrasdg.locationlogger.util.AppConstants
@@ -44,6 +43,10 @@ class MainActivity : BaseActivity<MainViewModel>(), OnMapReadyCallback {
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         (mapFragment as SupportMapFragment).getMapAsync(this)
+    }
+
+    override fun setupObservers() {
+        super.setupObservers()
 
         val newStatusInsertedObserver = Observer<UserStatus> { userStatus ->
             userStatus?.let {
@@ -53,11 +56,13 @@ class MainActivity : BaseActivity<MainViewModel>(), OnMapReadyCallback {
 
         viewModel.location.observe(this, Observer { location ->
             location?.let {
+
                 viewModel.logStatus(UserStatus(0, it.latitude, it.longitude, Calendar.getInstance().timeInMillis))
+                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(it.latitude, it.longitude), 15f), 1500, null)
             }
         })
 
-        viewModel.userStatuses.observe(this, androidx.lifecycle.Observer { statuses ->
+        viewModel.userStatuses.observe(this, Observer { statuses ->
 
             statuses?.let {
                 if (it.isNotEmpty()) {
@@ -75,6 +80,16 @@ class MainActivity : BaseActivity<MainViewModel>(), OnMapReadyCallback {
             satisfied?.let {
                 if (!it) {
                     showLocationSetting()
+                }
+            }
+        })
+
+        viewModel.locationPermissionGranted.observe(this, Observer { permissionGranted ->
+            permissionGranted?.let {
+                if (it){
+                    viewModel.getLastKnownLocation()
+                } else {
+                    requestPermission()
                 }
             }
         })
@@ -97,12 +112,6 @@ class MainActivity : BaseActivity<MainViewModel>(), OnMapReadyCallback {
         googleMap ?: return
 
         mMap = googleMap
-
-        if (viewModel.locationPermissionGranted) {
-            viewModel.getLastKnownLocation()
-        } else {
-            requestPermission()
-        }
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
@@ -132,16 +141,19 @@ class MainActivity : BaseActivity<MainViewModel>(), OnMapReadyCallback {
 
     private fun addMarker(status: UserStatus) {
         mMap.addMarker(
-            MarkerOptions().icon(getBitmapDescriptor(R.drawable.ic_dot))
+            MarkerOptions()
+                .title(status.id.toString())
+                .snippet(viewModel.getDateCurrentTimeZone(status.timeStamp))
+                .icon(getBitmapDescriptor(R.drawable.ic_dot))
                 .position(LatLng(status.latitude, status.longitude))
         )
     }
 
     private fun getBitmapDescriptor(id: Int): BitmapDescriptor {
-        val vectorDrawable = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            getDrawable(id)
+        val vectorDrawable = if (android.os.Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+            VectorDrawableCompat.create(resources, id, theme)
         } else {
-            ContextCompat.getDrawable(this, id)
+            resources.getDrawable(id, theme)
         }
         val bitmap = vectorDrawable?.intrinsicWidth?.let {
             Bitmap.createBitmap(
