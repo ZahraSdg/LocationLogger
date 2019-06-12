@@ -7,10 +7,21 @@ import ir.zahrasdg.locationlogger.model.UserStatusDao
 
 class UserStatusRepository(private val userStatusDao: UserStatusDao) {
 
-    val allWords: LiveData<List<UserStatus>> = userStatusDao.getAllStatuses()
+    companion object {
+
+        private const val PAGING_LIMIT = 50
+    }
+
+    fun loadStatusPage(pageNumber: Int): LiveData<List<UserStatus>> {
+        return userStatusDao.getAllStatuses(PAGING_LIMIT, (pageNumber - 1) * PAGING_LIMIT)
+    }
+
+    fun loadNewlyInsertedStatus(id: Int): LiveData<UserStatus> {
+        return userStatusDao.getStatus(id)
+    }
 
     @WorkerThread
-    suspend fun insert(userStatus: UserStatus) {
-        userStatusDao.insert(userStatus)
+    suspend fun insert(userStatus: UserStatus): Long {
+        return userStatusDao.insert(userStatus)
     }
 }

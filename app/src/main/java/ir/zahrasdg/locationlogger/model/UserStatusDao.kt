@@ -8,10 +8,13 @@ import androidx.room.Query
 @Dao
 interface UserStatusDao {
 
-    @Query("SELECT * FROM status_table")
-    fun getAllStatuses(): LiveData<List<UserStatus>>
+    @Query("SELECT * FROM status_table ORDER BY timeStamp ASC LIMIT :limit OFFSET :offset")
+    fun getAllStatuses(limit: Int, offset: Int): LiveData<List<UserStatus>>
+
+    @Query("SELECT * FROM status_table WHERE id = :id ")
+    fun getStatus(id: Int): LiveData<UserStatus>
 
     @Insert
-    suspend fun insert(status: UserStatus)
+    suspend fun insert(status: UserStatus): Long
 
 }
