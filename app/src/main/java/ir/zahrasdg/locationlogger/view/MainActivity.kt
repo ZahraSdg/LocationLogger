@@ -29,6 +29,10 @@ import java.util.*
 
 class MainActivity : BaseActivity<MainViewModel>(), OnMapReadyCallback {
 
+    companion object {
+        private const val REQUEST_CHECK_SETTINGS = 300
+    }
+
     private lateinit var mMap: GoogleMap
 
     override val layoutId: Int
@@ -54,7 +58,6 @@ class MainActivity : BaseActivity<MainViewModel>(), OnMapReadyCallback {
             location?.let {
 
                 viewModel.logStatus(UserStatus(0, it.latitude, it.longitude, Calendar.getInstance().timeInMillis))
-                mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(it.latitude, it.longitude), 15f), 1500, null)
             }
         })
 
@@ -76,6 +79,11 @@ class MainActivity : BaseActivity<MainViewModel>(), OnMapReadyCallback {
         viewModel.newlyInsertedStatus.observe(this, Observer<UserStatus> { userStatus ->
             userStatus?.let {
                 addMarker(it)
+                mMap.animateCamera(
+                    CameraUpdateFactory.newLatLngZoom(LatLng(it.latitude, it.longitude), 15f),
+                    1500,
+                    null
+                )
             }
         })
 
@@ -133,7 +141,7 @@ class MainActivity : BaseActivity<MainViewModel>(), OnMapReadyCallback {
 
     private fun showLocationSetting() {
         val i = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
-        this.startActivityForResult(i, AppConstants.REQUEST_CHECK_SETTINGS)
+        this.startActivityForResult(i, REQUEST_CHECK_SETTINGS)
     }
 
     private fun addMarkers(statuses: List<UserStatus>) {

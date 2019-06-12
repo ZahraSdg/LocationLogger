@@ -4,7 +4,7 @@ import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "status_table")
+@Entity(tableName = "status")
 data class UserStatus(
     @PrimaryKey(autoGenerate = true)
     val id: Int,
@@ -12,6 +12,6 @@ data class UserStatus(
     val latitude: Double,
     @ColumnInfo(name = "longitude")
     val longitude: Double,
-    @ColumnInfo(name = "timeStamp")
+    @ColumnInfo(name = "time_stamp")
     val timeStamp: Long
 )

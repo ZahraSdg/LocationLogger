@@ -3,6 +3,7 @@ package ir.zahrasdg.locationlogger.viewmodel
 import android.app.Application
 import android.content.pm.PackageManager
 import android.location.Location
+import android.os.Build
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -137,13 +138,19 @@ class MainViewModel(application: Application) : BaseAndroidViewModel(application
         }
     }
 
+    @Suppress("DEPRECATION")
     fun getDateCurrentTimeZone(timestamp: Long): String {
         try {
             val calendar = Calendar.getInstance()
             val tz = TimeZone.getDefault()
             calendar.timeInMillis = timestamp
             calendar.add(Calendar.MILLISECOND, tz.getOffset(calendar.timeInMillis))
-            val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
+            val locale = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                getApplication<Application>().resources.configuration.locales[0]
+            } else {
+                getApplication<Application>().resources.configuration.locale
+            }
+            val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", locale)
             val currentTimeZone = calendar.time as Date
             return sdf.format(currentTimeZone)
         } catch (e: Exception) {
