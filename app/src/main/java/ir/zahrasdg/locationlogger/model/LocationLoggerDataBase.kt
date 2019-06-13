@@ -11,7 +11,6 @@ abstract class LocationLoggerDataBase : RoomDatabase() {
     abstract fun userStatusDao(): UserStatusDao
 
     companion object {
-
         fun getDatabase(context: Context): LocationLoggerDataBase {
             synchronized(this) {
                 return Room.databaseBuilder(

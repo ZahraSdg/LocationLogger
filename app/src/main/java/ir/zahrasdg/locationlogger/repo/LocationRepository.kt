@@ -16,11 +16,16 @@ class LocationRepository(private val fusedLocationClient: FusedLocationProviderC
         private const val DISPLACEMENT = 5F
     }
 
+
+    //region Private parameters
     private var locationRequest: LocationRequest? = null
     private var locationCallback: LocationCallback
+    //endregion
 
+    //region Public parameters
     val location = MutableLiveData<Location>()
     var locationSettingRequest: LocationSettingsRequest? = null
+    //endregion
 
     init {
 
@@ -28,9 +33,9 @@ class LocationRepository(private val fusedLocationClient: FusedLocationProviderC
             override fun onLocationResult(locationResult: LocationResult?) {
                 locationResult ?: return
                 for (location in locationResult.locations) {
-
                     Log.d(TAG, "onLocationResult$location")
                     Log.d(TAG, "onLocationTime" + Calendar.getInstance().timeInMillis / 1000)
+
                     this@LocationRepository.location.postValue(location)
                 }
             }
@@ -49,6 +54,7 @@ class LocationRepository(private val fusedLocationClient: FusedLocationProviderC
         }?.build()
     }
 
+    //region Public functions
     @SuppressLint("MissingPermission")
     fun getLastKnownLocation() {
         fusedLocationClient.lastLocation
@@ -65,12 +71,12 @@ class LocationRepository(private val fusedLocationClient: FusedLocationProviderC
         fusedLocationClient.requestLocationUpdates(
             locationRequest,
             locationCallback,
-            null /* Looper */
+            null
         )
     }
 
     fun stopLocationUpdates() {
         fusedLocationClient.removeLocationUpdates(locationCallback)
     }
-
+    //endregion
 }

@@ -1,3 +1,5 @@
+@file:Suppress("DEPRECATION")
+
 package ir.zahrasdg.locationlogger
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule

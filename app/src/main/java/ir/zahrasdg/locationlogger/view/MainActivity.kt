@@ -33,8 +33,9 @@ class MainActivity : BaseActivity<MainViewModel>(), OnMapReadyCallback {
         private const val REQUEST_CHECK_SETTINGS = 300
     }
 
-    private lateinit var mMap: GoogleMap
+    private lateinit var map: GoogleMap
 
+    //region Overridden functions
     override val layoutId: Int
         get() = R.layout.activity_main
 
@@ -47,7 +48,6 @@ class MainActivity : BaseActivity<MainViewModel>(), OnMapReadyCallback {
 
         title = getString(R.string.title_activity_main)
 
-        // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         (mapFragment as SupportMapFragment).getMapAsync(this)
     }
 
@@ -56,20 +56,17 @@ class MainActivity : BaseActivity<MainViewModel>(), OnMapReadyCallback {
 
         viewModel.location.observe(this, Observer { location ->
             location?.let {
-
                 viewModel.logStatus(UserStatus(0, it.latitude, it.longitude, Calendar.getInstance().timeInMillis))
             }
         })
 
         viewModel.userStatuses.observe(this, Observer { statuses ->
-
             statuses?.let {
                 if (it.isNotEmpty()) {
                     addMarkers(it)
-                    viewModel.onPageLoading = true
                     viewModel.incrementPage()
                 } else { // end of paging saved data
-                    viewModel.onPageLoading = false
+                    viewModel.isOnColdStart = false
                     viewModel.userStatuses.removeObservers(this)
                 }
             }
@@ -79,7 +76,7 @@ class MainActivity : BaseActivity<MainViewModel>(), OnMapReadyCallback {
         viewModel.newlyInsertedStatus.observe(this, Observer<UserStatus> { userStatus ->
             userStatus?.let {
                 addMarker(it)
-                mMap.animateCamera(
+                map.animateCamera(
                     CameraUpdateFactory.newLatLngZoom(LatLng(it.latitude, it.longitude), 15f),
                     1500,
                     null
@@ -122,7 +119,7 @@ class MainActivity : BaseActivity<MainViewModel>(), OnMapReadyCallback {
     override fun onMapReady(googleMap: GoogleMap?) {
         googleMap ?: return
 
-        mMap = googleMap
+        map = googleMap
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
@@ -130,12 +127,14 @@ class MainActivity : BaseActivity<MainViewModel>(), OnMapReadyCallback {
 
         viewModel.handlePermissionResult(requestCode, grantResults)
     }
+    //endregion
 
+    //region Private functions
     private fun requestPermission() {
         ActivityCompat.requestPermissions(
             this,
             arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
-            AppConstants.PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION
+            AppConstants.LOCATION_PERMISSIONS_REQUEST_CODE
         )
     }
 
@@ -145,13 +144,13 @@ class MainActivity : BaseActivity<MainViewModel>(), OnMapReadyCallback {
     }
 
     private fun addMarkers(statuses: List<UserStatus>) {
-        for (status in statuses) {
-            addMarker(status)
+        statuses.forEach {
+            addMarker(it)
         }
     }
 
     private fun addMarker(status: UserStatus) {
-        mMap.addMarker(
+        map.addMarker(
             MarkerOptions()
                 .title(status.id.toString())
                 .snippet(viewModel.getDateCurrentTimeZone(status.timeStamp))
@@ -177,4 +176,5 @@ class MainActivity : BaseActivity<MainViewModel>(), OnMapReadyCallback {
         vectorDrawable.draw(canvas)
         return BitmapDescriptorFactory.fromBitmap(bitmap)
     }
+    //endregion
 }

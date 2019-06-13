@@ -10,6 +10,7 @@ import org.koin.android.ext.android.startKoin
 import org.koin.android.ext.koin.androidContext
 import org.koin.dsl.module.module
 
+@Suppress("unused")
 class App : Application() {
 
     private val appModule = module {
@@ -19,6 +20,7 @@ class App : Application() {
 
     override fun onCreate() {
         super.onCreate()
+
         startKoin(this, listOf(appModule))
         AppCompatDelegate.setCompatVectorFromResourcesEnabled(true)
     }

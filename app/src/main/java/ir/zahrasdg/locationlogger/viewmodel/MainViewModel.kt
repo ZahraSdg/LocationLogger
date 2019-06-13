@@ -28,58 +28,66 @@ class MainViewModel(application: Application) : BaseAndroidViewModel(application
 
     companion object {
 
-        private const val MAX_DISPLACEMENT_IN_FIVE_SECONDS = 100F
-        private const val MIN_DISPLACEMENT_IN_FIVE_SECONDS = 5F
+        private const val MIN_DISPLACEMENT = 5F
     }
 
+    //region Private parameters
     private val userStatusRepository by inject<UserStatusRepository>()
     private val locationRepository by inject<LocationRepository>()
     private var pageNumber = MutableLiveData<Int>()
     private var newlyInsertedId = MutableLiveData<Int>()
     private var lastLocation: Location? = null
+    //endregion
+
+    //region Public parameters
     val location = locationRepository.location
     var locationPermissionGranted = MutableLiveData<Boolean>()
     var locationSettingSatisfied = MutableLiveData<Boolean>()
-    var onPageLoading = true
+    var isOnColdStart = false
     var userStatuses: LiveData<List<UserStatus>> = Transformations.switchMap(pageNumber, ::loadNextPage)
     var newlyInsertedStatus: LiveData<UserStatus> =
         Transformations.switchMap(newlyInsertedId, ::loadSingleStatus)
+    //endregion
 
     init {
+        isOnColdStart = true
         pageNumber.value = 1
         checkLocationPermission()
     }
 
-    fun incrementPage() {
-        pageNumber.postValue(pageNumber.value?.inc())
+    //region Private functions
+    private fun checkLocationPermission() {
+
+        locationPermissionGranted.value = ContextCompat.checkSelfPermission(
+            getApplication<Application>().applicationContext,
+            android.Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
     }
 
-    private fun loadSingleStatus(id: Int) =
-        userStatusRepository.loadNewlyInsertedStatus(id)
+    private fun loadSingleStatus(id: Int) = userStatusRepository.loadNewlyInsertedStatus(id)
 
     private fun loadNextPage(pageNum: Int) = userStatusRepository.loadStatusPage(pageNum)
 
+    private fun insertStatus(userStatus: UserStatus) = viewModelScope.launch(Dispatchers.IO) {
+        val insertedId = userStatusRepository.insert(userStatus).toInt()
+        if (!isOnColdStart) {
+            newlyInsertedId.postValue(insertedId)
+        }
+    }
+    //endregion
+
+    //region Public functions
     fun logStatus(userStatus: UserStatus) {
-
         location.value?.let {
-
-            // if its first assertion or distance with previous location is between 5-100
-            if (lastLocation == null || (it.distanceTo(lastLocation) > MIN_DISPLACEMENT_IN_FIVE_SECONDS && it.distanceTo(
-                    lastLocation
-                ) < MAX_DISPLACEMENT_IN_FIVE_SECONDS)
-            ) {
+            if (lastLocation == null || (it.distanceTo(lastLocation) > MIN_DISPLACEMENT)) {
                 insertStatus(userStatus)
             }
-
             lastLocation = location.value
         }
     }
 
-    private fun insertStatus(userStatus: UserStatus) = viewModelScope.launch(Dispatchers.IO) {
-        val insertedId = userStatusRepository.insert(userStatus).toInt()
-        if (!onPageLoading) { // notify new status inserted after paging is done
-            newlyInsertedId.postValue(insertedId)
-        }
+    fun incrementPage() {
+        pageNumber.postValue(pageNumber.value?.inc())
     }
 
     fun startLocationUpdates() {
@@ -94,14 +102,6 @@ class MainViewModel(application: Application) : BaseAndroidViewModel(application
         locationRepository.getLastKnownLocation()
     }
 
-    private fun checkLocationPermission() {
-
-        locationPermissionGranted.value = ContextCompat.checkSelfPermission(
-            getApplication<Application>().applicationContext,
-            android.Manifest.permission.ACCESS_FINE_LOCATION
-        ) == PackageManager.PERMISSION_GRANTED
-    }
-
     fun checkLocationSettings() {
 
         val client: SettingsClient = LocationServices.getSettingsClient(getApplication<Application>())
@@ -109,15 +109,11 @@ class MainViewModel(application: Application) : BaseAndroidViewModel(application
             client.checkLocationSettings(locationRepository.locationSettingRequest)
 
         task.addOnSuccessListener {
-            // All location settings are satisfied. The client can initialize
-            // location requests here.
             locationSettingSatisfied.postValue(true)
         }
 
         task.addOnFailureListener { exception ->
             if (exception is ResolvableApiException) {
-                // Location settings are not satisfied, but this can be fixed
-                // by showing the user a dialog.
                 locationSettingSatisfied.postValue(false)
             }
         }
@@ -126,8 +122,7 @@ class MainViewModel(application: Application) : BaseAndroidViewModel(application
     fun handlePermissionResult(requestCode: Int, grantResults: IntArray) {
         locationPermissionGranted.value = false
         when (requestCode) {
-            AppConstants.PERMISSIONS_REQUEST_ACCESS_FINE_LOCATION -> {
-                // If request is cancelled, the result arrays are empty.
+            AppConstants.LOCATION_PERMISSIONS_REQUEST_CODE -> {
                 if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     locationPermissionGranted.value = true
                     getLastKnownLocation()
@@ -157,4 +152,5 @@ class MainViewModel(application: Application) : BaseAndroidViewModel(application
         }
         return ""
     }
+    //endregion
 }
