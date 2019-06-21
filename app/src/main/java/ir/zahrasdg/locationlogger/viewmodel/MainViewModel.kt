@@ -120,7 +120,6 @@ class MainViewModel(application: Application) : BaseAndroidViewModel(application
     }
 
     fun handlePermissionResult(requestCode: Int, grantResults: IntArray) {
-        locationPermissionGranted.value = false
         when (requestCode) {
             AppConstants.LOCATION_PERMISSIONS_REQUEST_CODE -> {
                 if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
